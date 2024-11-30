@@ -2,6 +2,12 @@ import requests
 import mwparserfromhell
 import json
 from urllib.parse import quote  # Import for URL encoding
+import re  # Import for sanitizing file names
+
+# Function to sanitize file names
+def sanitize_filename(filename):
+    """Replaces invalid characters in file names with an underscore."""
+    return re.sub(r'[\/:*?"<>|]', '_', filename)
 
 # Helper function to recursively parse and resolve nested templates
 def resolve_nested_templates(value, wikicode):
@@ -99,9 +105,11 @@ for page_name in page_names:
                     "sections": sections_data,
                 }
 
-                # Convert to JSON and save to file
+                # Convert to JSON
                 json_output = json.dumps(parsed_output, indent=4, ensure_ascii=False)
-                output_filename = f"parsed_output_{formatted_name}.json"
+
+                # Sanitize the file name and save the JSON output
+                output_filename = f"parsed_output_{sanitize_filename(formatted_name)}.json"
                 with open(output_filename, "w", encoding="utf-8") as json_file:
                     json_file.write(json_output)
 
