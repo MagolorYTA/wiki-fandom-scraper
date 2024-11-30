@@ -5,19 +5,33 @@ import json
 # Helper function to recursively parse and resolve nested templates
 def resolve_nested_templates(value, wikicode):
     if "{{" in value and "}}" in value:
-        # Parse the nested template
         nested_code = mwparserfromhell.parse(value)
         resolved_data = {}
+        template_count = {}
+
         for template in nested_code.filter_templates():
             template_name = str(template.name).strip()
+            # Handle multiple occurrences of the same template
+            if template_name not in template_count:
+                template_count[template_name] = 1
+            else:
+                template_count[template_name] += 1
+
+            template_key = f"{template_name}_{template_count[template_name]}"  # Unique key
             template_data = {}
             for param in template.params:
                 key = str(param.name).strip()
                 value = str(param.value).strip()
-                template_data[key] = value
-            resolved_data[template_name] = template_data
+                template_data[key] = resolve_nested_templates(value, wikicode)  # Recursive parsing
+            resolved_data[template_key] = template_data
         return resolved_data
-    return value  # If no nested template, return the original value
+
+    # Handle [[Links]] and [[Zoan#Artificial Zoan|Artificial Zoan]]
+    if "[[" in value and "]]" in value:
+        parsed_code = mwparserfromhell.parse(value)
+        return parsed_code.strip_code()  # Extract readable text
+
+    return value  # Return original value if no nested template or link
 
 # Original URL
 url = "https://onepiece.fandom.com/wiki/Battaman"
@@ -26,7 +40,7 @@ url = "https://onepiece.fandom.com/wiki/Battaman"
 title = url.split("/")[-1]
 api_url = f"https://onepiece.fandom.com/api.php?action=query&prop=revisions&titles={title}&rvprop=content&format=json"
 
-print(api_url)
+print(f"Fetching data from: {api_url}")
 
 # Get JSON Response
 response = requests.get(api_url)
@@ -63,15 +77,22 @@ try:
 
             # Combine everything into a single JSON structure
             parsed_output = {
+                "metadata": {
+                    "page_id": page_id,
+                    "title": page_content.get("title", "Unknown"),
+                    "url": url
+                },
                 "templates": templates_data,
                 "sections": sections_data,
             }
 
-            # Convert to JSON and print
+            # Convert to JSON and save to file
             json_output = json.dumps(parsed_output, indent=4, ensure_ascii=False)
-            # Save to a file
-            with open("parsed_output.json", "w", encoding="utf-8") as json_file:
+            output_filename = f"parsed_output_{title}.json"
+            with open(output_filename, "w", encoding="utf-8") as json_file:
                 json_file.write(json_output)
+
+            print(f"Data saved to: {output_filename}")
 
         else:
             print(f"No revisions found for page {page_id}")
