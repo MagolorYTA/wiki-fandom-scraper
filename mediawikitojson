@@ -33,68 +33,76 @@ def resolve_nested_templates(value, wikicode):
 
     return value  # Return original value if no nested template or link
 
-# Original URL
-url = "https://onepiece.fandom.com/wiki/Battaman"
+# List of page names to test
+page_names = ["Battaman", "Monkey D. Luffy"]
 
-# Transform to API URL
-title = url.split("/")[-1]
-api_url = f"https://onepiece.fandom.com/api.php?action=query&prop=revisions&titles={title}&rvprop=content&format=json"
+# Base API URL
+base_url = "https://onepiece.fandom.com/api.php"
 
-print(f"Fetching data from: {api_url}")
+for page_name in page_names:
+    # Build the API URL for the current page
+    api_url = f"{base_url}?action=query&prop=revisions&titles={page_name}&rvprop=content&format=json"
 
-# Get JSON Response
-response = requests.get(api_url)
-data = response.json()
+    print(f"Fetching data for page: {page_name}")
+    print(f"API URL: {api_url}")
 
-# Navigate to the specific content and parse it
-try:
-    pages = data['query']['pages']
-    for page_id, page_content in pages.items():
-        if 'revisions' in page_content:
-            # Extract the `*` field from the first revision
-            content = page_content['revisions'][0]['*']
+    # Get JSON Response
+    response = requests.get(api_url)
+    if response.status_code != 200:
+        print(f"Failed to fetch data for {page_name}: HTTP {response.status_code}")
+        continue
 
-            # Parse the MediaWiki content
-            wikicode = mwparserfromhell.parse(content)
+    data = response.json()
 
-            # Extract templates into JSON-friendly format
-            templates_data = {}
-            for template in wikicode.filter_templates():
-                template_name = str(template.name).strip()
-                template_data = {}
-                for param in template.params:
-                    key = str(param.name).strip()
-                    value = str(param.value).strip()
-                    # Resolve nested templates
-                    template_data[key] = resolve_nested_templates(value, wikicode)
-                templates_data[template_name] = template_data
+    # Navigate to the specific content and parse it
+    try:
+        pages = data['query']['pages']
+        for page_id, page_content in pages.items():
+            if 'revisions' in page_content:
+                # Extract the `*` field from the first revision
+                content = page_content['revisions'][0]['*']
 
-            # Extract plain text sections
-            sections_data = {}
-            for heading in wikicode.get_sections(include_lead=True, flat=True):
-                section_title = heading.filter_headings()[0].title.strip() if heading.filter_headings() else "Lead"
-                sections_data[section_title] = heading.strip_code()
+                # Parse the MediaWiki content
+                wikicode = mwparserfromhell.parse(content)
 
-            # Combine everything into a single JSON structure
-            parsed_output = {
-                "metadata": {
-                    "page_id": page_id,
-                    "title": page_content.get("title", "Unknown"),
-                    "url": url
-                },
-                "templates": templates_data,
-                "sections": sections_data,
-            }
+                # Extract templates into JSON-friendly format
+                templates_data = {}
+                for template in wikicode.filter_templates():
+                    template_name = str(template.name).strip()
+                    template_data = {}
+                    for param in template.params:
+                        key = str(param.name).strip()
+                        value = str(param.value).strip()
+                        # Resolve nested templates
+                        template_data[key] = resolve_nested_templates(value, wikicode)
+                    templates_data[template_name] = template_data
 
-            # Convert to JSON and save to file
-            json_output = json.dumps(parsed_output, indent=4, ensure_ascii=False)
-            output_filename = f"parsed_output_{title}.json"
-            with open(output_filename, "w", encoding="utf-8") as json_file:
-                json_file.write(json_output)
+                # Extract plain text sections
+                sections_data = {}
+                for heading in wikicode.get_sections(include_lead=True, flat=True):
+                    section_title = heading.filter_headings()[0].title.strip() if heading.filter_headings() else "Lead"
+                    sections_data[section_title] = heading.strip_code()
 
-            print(f"Data saved to: {output_filename}")
+                # Combine everything into a single JSON structure
+                parsed_output = {
+                    "metadata": {
+                        "page_id": page_id,
+                        "title": page_content.get("title", "Unknown"),
+                        "url": f"https://onepiece.fandom.com/wiki/{page_name}"
+                    },
+                    "templates": templates_data,
+                    "sections": sections_data,
+                }
 
-        else:
-            print(f"No revisions found for page {page_id}")
-except KeyError as e:
-    print(f"KeyError: {e}")
+                # Convert to JSON and save to file
+                json_output = json.dumps(parsed_output, indent=4, ensure_ascii=False)
+                output_filename = f"parsed_output_{page_name}.json"
+                with open(output_filename, "w", encoding="utf-8") as json_file:
+                    json_file.write(json_output)
+
+                print(f"Data saved to: {output_filename}")
+
+            else:
+                print(f"No revisions found for page {page_id}")
+    except KeyError as e:
+        print(f"KeyError while processing {page_name}: {e}")
