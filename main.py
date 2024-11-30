@@ -1,6 +1,7 @@
 import requests
 import mwparserfromhell
 import json
+from urllib.parse import quote  # Import for URL encoding
 
 # Helper function to recursively parse and resolve nested templates
 def resolve_nested_templates(value, wikicode):
@@ -41,8 +42,8 @@ with open("test.txt", "r", encoding="utf-8") as file:
 base_url = "https://onepiece.fandom.com/api.php"
 
 for page_name in page_names:
-    # Replace spaces with underscores for the MediaWiki API
-    formatted_name = page_name.replace(" ", "_")
+    # Replace spaces with underscores and encode special characters for the MediaWiki API
+    formatted_name = quote(page_name.replace(" ", "_"))
 
     # Build the API URL for the current page
     api_url = f"{base_url}?action=query&prop=revisions&titles={formatted_name}&rvprop=content&format=json"
