@@ -33,15 +33,19 @@ def resolve_nested_templates(value, wikicode):
 
     return value  # Return original value if no nested template or link
 
-# List of page names to test
-page_names = ["Battaman", "Monkey D. Luffy"]
+# Load page names from a file
+with open("test.txt", "r", encoding="utf-8") as file:
+    page_names = [line.strip() for line in file if line.strip()]
 
 # Base API URL
 base_url = "https://onepiece.fandom.com/api.php"
 
 for page_name in page_names:
+    # Replace spaces with underscores for the MediaWiki API
+    formatted_name = page_name.replace(" ", "_")
+
     # Build the API URL for the current page
-    api_url = f"{base_url}?action=query&prop=revisions&titles={page_name}&rvprop=content&format=json"
+    api_url = f"{base_url}?action=query&prop=revisions&titles={formatted_name}&rvprop=content&format=json"
 
     print(f"Fetching data for page: {page_name}")
     print(f"API URL: {api_url}")
@@ -88,7 +92,7 @@ for page_name in page_names:
                     "metadata": {
                         "page_id": page_id,
                         "title": page_content.get("title", "Unknown"),
-                        "url": f"https://onepiece.fandom.com/wiki/{page_name}"
+                        "url": f"https://onepiece.fandom.com/wiki/{formatted_name}"
                     },
                     "templates": templates_data,
                     "sections": sections_data,
@@ -96,7 +100,7 @@ for page_name in page_names:
 
                 # Convert to JSON and save to file
                 json_output = json.dumps(parsed_output, indent=4, ensure_ascii=False)
-                output_filename = f"parsed_output_{page_name}.json"
+                output_filename = f"parsed_output_{formatted_name}.json"
                 with open(output_filename, "w", encoding="utf-8") as json_file:
                     json_file.write(json_output)
 
