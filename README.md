@@ -142,44 +142,6 @@ Got it! If you're using **DumpGenerator** to get page titles from the first name
 
 #### Using DumpGenerator to Generate Titles for `test.txt`
 
-1. **Run DumpGenerator**:
-   To retrieve only titles from the main namespace (Namespace 0), use the following command:
-   ```bash
-   python dumpgenerator.py --api=https://onepiece.fandom.com/api.php --curonly --namespace=0 --titles
-   ```
-   - `--api`: The API endpoint for the wiki.
-   - `--curonly`: Fetches only the current revisions.
-   - `--namespace=0`: Retrieves titles only from Namespace 0 (main content).
-   - `--titles`: Outputs a list of page titles without downloading content.
-
-2. **Stop the Script**:
-   Once DumpGenerator begins generating the page titles, press `Ctrl+C` to stop the script after the titles have been retrieved.
-
-3. **Save Titles to `test.txt`**:
-   - Copy the output titles from DumpGenerator into a text file named `test.txt`.
-   - Ensure each title is on a new line.
-
----
-
-### Integration with the Script
-- The script reads `test.txt` as its input. By generating the titles with DumpGenerator, you ensure that only valid page titles from the main namespace are processed.
-
-### Example Workflow
-1. **Generate Titles**:
-   ```bash
-   python dumpgenerator.py --api=https://onepiece.fandom.com/api.php --curonly --namespace=0 --titles > titles_raw.txt
-   ```
-
-2. **Filter and Save Titles**:
-   Open `titles_raw.txt`, clean up any unwanted lines, and save the titles to `test.txt`.
-
-3. **Run the Script**:
-   Execute the scraping script:
-   ```bash
-   python mediawiki_scraper.py
-   ```
-
----
 
 ### Example for README File:
 
